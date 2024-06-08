@@ -9,6 +9,8 @@
 #include "math/math.hpp"
 #include <stm32g4xx.h>
 #include <numeric>
+#include "ml/MachineLearning.hpp"
+#include "Board.hpp"
 
 float manualMaxTilt = 30 * (M_PI / 180);
 float manualYawRate = 150 * (M_PI / 180);
@@ -126,19 +128,23 @@ void Stabilize::levelMode()
 
 void Stabilize::altMode()
 {
+    float m = 0.25 * RC::channel(RC::ChannelFunction::PARAM_1);
     if (RC::channel(RC::ChannelFunction::THROTTLE) < -0.9)
         Control::setTargetThrust(0);
     else
     {
         Control::setTargetThrust(getThrottleFromRC());
 
-        if (not RC::inDZ(RC::ChannelFunction::YAW))
-            manualYawSetPoint += (/* yaw + */ RC::channel(RC::ChannelFunction::YAW)) * AHRS::getLastDT() * manualYawRate;
+        if (not RC::inDZ(RC::ChannelFunction::YAW)) {
+            /* yaw + */ 
+            manualYawSetPoint += (m * ML.getYaw() +  RC::channel(RC::ChannelFunction::YAW)) * AHRS::getLastDT() * manualYawRate;
+        }
     }
 
     Control::setTargetAttitude(getSPFromRC() /* + (dx, dy) */);
     Control::trustMode = Control::TrustMode::VELOCITY;
-    Control::setTargetThrust(getThrottleFromRC() /* + dz */);
+    /* + dz */
+    Control::setTargetThrust(getThrottleFromRC() +  m * ML.getDz());
 }
 
 void Stabilize::acroMode()

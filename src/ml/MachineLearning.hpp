@@ -12,6 +12,8 @@ private:
     float _dy = 0.0f;
     float _dz = 0.0f;
     float _yaw = 0.0f;
+    unsigned long long c = 0;
+    float byteToFloat(uint8_t byte);
 public:
     void update(MLData &mlData);
     float getDx() { return _dx; }
@@ -20,4 +22,4 @@ public:
     float getYaw() { return _yaw; }
 };
 
-MachineLearning ML;
+extern MachineLearning ML;
