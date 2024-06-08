@@ -133,12 +133,12 @@ void Stabilize::altMode()
         Control::setTargetThrust(getThrottleFromRC());
 
         if (not RC::inDZ(RC::ChannelFunction::YAW))
-            manualYawSetPoint += RC::channel(RC::ChannelFunction::YAW) * AHRS::getLastDT() * manualYawRate;
+            manualYawSetPoint += (/* yaw + */ RC::channel(RC::ChannelFunction::YAW)) * AHRS::getLastDT() * manualYawRate;
     }
 
-    Control::setTargetAttitude(getSPFromRC());
+    Control::setTargetAttitude(getSPFromRC() /* + (dx, dy) */);
     Control::trustMode = Control::TrustMode::VELOCITY;
-    Control::setTargetThrust(getThrottleFromRC());
+    Control::setTargetThrust(getThrottleFromRC() /* + dz */);
 }
 
 void Stabilize::acroMode()

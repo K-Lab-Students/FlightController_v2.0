@@ -2,15 +2,9 @@
 #include "SRT/SRT.hpp"
 #include "modes/Modes.hpp"
 #include "Board.hpp"
+#include "MachineLearning.hpp"
 
-const char * hi = "Hello!";
-unsigned long ts = 0;
-
-struct Data {
-    uint8_t a[4];
-};
-
-const size_t buf_size = sizeof(Data);
+const size_t buf_size = sizeof(MLData);
 uint8_t buff[buf_size];
 
 bool process_bytes(uint8_t* buf, size_t len) {
@@ -55,8 +49,6 @@ bool process_bytes(uint8_t* buf, size_t len) {
 }
 
 
-Data data;
-
 int main()
 {
     setup();
@@ -71,15 +63,8 @@ int main()
         loop();
         SRT::handler();
         FlightModeDispatcher::handler();
-        if (process_bytes(buff, sizeof(Data))) {
-            data = *(Data*) buff;
-            
-            for (size_t i = 0; i < 4; i++) {
-                mav1Uart.print((int) data.a[i]);
-                mav1Uart.print('\t');
-            }
-            mav1Uart.write('\n');
-            mav1Uart.startTX();
+        if (process_bytes(buff, sizeof(MLData))) {
+            ML.update(*(MLData*) buff);
         }
     }
 }
