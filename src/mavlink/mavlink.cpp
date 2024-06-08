@@ -289,24 +289,6 @@ void handler()
 
     for (static uint32_t rcTimer = 0; millis() - rcTimer > 250; rcTimer = millis())
         mavlink_rc_report(MAVLINK_COMM_0), mavlink_rc_report(MAVLINK_COMM_1);
-
-    while (mav0Uart.available())
-    {
-        mavlink_message_t msg;
-        mavlink_status_t status = {0};
-        if (mavlink_parse_char(MAVLINK_COMM_0, mav0Uart.read(), &msg, &status) != MAVLINK_FRAMING_OK)
-            continue;
-        parseMavlinkMessage(msg);
-    }
-
-    while (mav1Uart.available())
-    {
-        mavlink_message_t msg;
-        mavlink_status_t status = {0};
-        if (mavlink_parse_char(MAVLINK_COMM_0, mav1Uart.read(), &msg, &status) != MAVLINK_FRAMING_OK)
-            continue;
-        parseMavlinkMessage(msg);
-    }
 }
 
 REGISTER_SRT_MODULE(mavlink_module, init, enable, handler);
