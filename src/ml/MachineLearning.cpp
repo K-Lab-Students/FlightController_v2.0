@@ -9,7 +9,7 @@ void MachineLearning::update(MLData &mlData) {
     _yaw = byteToFloat(mlData.payload[3]);
 
     // debug
-    if (true) {
+    if (false) {
         mav1Uart.print((int) mlData.payload[0], 10);
         mav1Uart.print('\t');
         mav1Uart.print((int) mlData.payload[1], 10);
@@ -27,13 +27,7 @@ void MachineLearning::update(MLData &mlData) {
 }
 
 float MachineLearning::byteToFloat(uint8_t byte) {
-    if (byte == 0) {
-        return 0.0;
-    } else if (byte < 128) {
-        return -1.0;
-    } else {
-        return 1.0;
-    }
+    return 1.0 * byte / 255 - 0.5;
 }
 
 MachineLearning ML;

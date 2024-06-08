@@ -73,12 +73,12 @@ float const constrain(float fAngle)
     return fAngle;
 }
 
-Eigen::Quaternionf Stabilize::getSPFromRC()
+Eigen::Quaternionf Stabilize::getSPFromRC(float m, float dx, float dy)
 {
     Eigen::Quaternionf qRPSP;
     Eigen::Vector3f targetTilt{
-        RC::channel(RC::ChannelFunction::ROLL) * manualMaxTilt,
-        -RC::channel(RC::ChannelFunction::PITCH) * manualMaxTilt, 0};
+        (m * dy + RC::channel(RC::ChannelFunction::ROLL)) * manualMaxTilt,
+        -(m * dx + RC::channel(RC::ChannelFunction::PITCH)) * manualMaxTilt, 0};
     float tiltAngle = targetTilt.norm();
     if (tiltAngle > manualMaxTilt)
         tiltAngle = manualMaxTilt;
@@ -109,7 +109,7 @@ float Stabilize::getThrottleFromRC()
     return (tht + 1) / 2;
 }
 
-void Stabilize::levelMode()
+void Stabilize::altMode()
 {
     if (RC::channel(RC::ChannelFunction::THROTTLE) < -0.9)
         Control::setTargetThrust(0);
@@ -121,14 +121,14 @@ void Stabilize::levelMode()
             manualYawSetPoint += RC::channel(RC::ChannelFunction::YAW) * AHRS::getLastDT() * manualYawRate;
     }
 
-    Control::setTargetAttitude(getSPFromRC());
-    Control::trustMode = Control::TrustMode::MANUAL;
+    Control::setTargetAttitude(getSPFromRC(0, 0, 0));
+    Control::trustMode = Control::TrustMode::VELOCITY;
     Control::setTargetThrust(getThrottleFromRC());
 }
 
-void Stabilize::altMode()
+void Stabilize::levelMode()
 {
-    float m = 0.25 * RC::channel(RC::ChannelFunction::PARAM_1);
+    float m = 0.25 * (RC::channel(RC::ChannelFunction::PARAM_1) / 2 + 0.5);
     if (RC::channel(RC::ChannelFunction::THROTTLE) < -0.9)
         Control::setTargetThrust(0);
     else
@@ -137,14 +137,30 @@ void Stabilize::altMode()
 
         if (not RC::inDZ(RC::ChannelFunction::YAW)) {
             /* yaw + */ 
-            manualYawSetPoint += (m * ML.getYaw() +  RC::channel(RC::ChannelFunction::YAW)) * AHRS::getLastDT() * manualYawRate;
+            manualYawSetPoint += (RC::channel(RC::ChannelFunction::YAW)) * AHRS::getLastDT() * manualYawRate;
         }
+        manualYawSetPoint += 4 * m * ML.getYaw() * AHRS::getLastDT() * manualYawRate;
     }
 
-    Control::setTargetAttitude(getSPFromRC() /* + (dx, dy) */);
-    Control::trustMode = Control::TrustMode::VELOCITY;
+    Control::setTargetAttitude(getSPFromRC(m, ML.getDx(), ML.getDy()) /* + (dx, dy) */);
+    Control::trustMode = Control::TrustMode::MANUAL;
     /* + dz */
-    Control::setTargetThrust(getThrottleFromRC() +  m * ML.getDz());
+    Control::setTargetThrust(getThrottleFromRC() -  m * ML.getDz());
+    if (true) {
+        mav1Uart.print(Control::getTargetThrust(), 10);
+        mav1Uart.print('\t');
+        mav1Uart.print((int) (manualYawSetPoint * 1024), 10);
+        mav1Uart.print('\t');
+        Eigen::Quaternionf attitude = Control::getTargetAttitude();
+        mav1Uart.print((int) (attitude.x() * 1024), 10);
+        mav1Uart.print('\t');
+        mav1Uart.print((int) (attitude.y() * 1024), 10);
+        mav1Uart.print('\t');
+        mav1Uart.print((int) (attitude.z() * 1024), 10);
+        mav1Uart.print('\t');
+        mav1Uart.print((int) (attitude.w() * 1024), 10);
+        mav1Uart.print('\n');
+    }
 }
 
 void Stabilize::acroMode()

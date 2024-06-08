@@ -25,7 +25,7 @@ public:
     void handler() override final;
 
 private:
-    Eigen::Quaternionf getSPFromRC();
+    Eigen::Quaternionf getSPFromRC(float m, float dx, float dy);
     float getThrottleFromRC();
 
     void levelMode();
